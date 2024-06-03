@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set -e
+
+usage() {
+  echo "Usage: $0 image:tag"
+  echo "Extract Docker image layers to a directory."
+  echo "Options:"
+  echo "  -h, --help  Show this help message and exit"
+}
+
+if [[ $# -ne 1 || $1 == "-h" || $1 == "--help" ]]; then
+  usage
+  exit 1
+fi
+
+# check if docker, jq are installed
+if ! command -v docker &> /dev/null; then
+  echo "docker command not found. Please install Docker."
+  exit 1
+fi
+if ! command -v jq &> /dev/null; then
+  echo "jq command not found. Please install jq."
+  exit 1
+fi
+
+IMAGE_TAG=$1
+IMAGE_TAG_ESCAPED=$(echo $IMAGE_TAG | sed 's/[:\/]/_/g')
+TAR_FILE="$IMAGE_TAG_ESCAPED.tar"
+EXTRACT_DIR="$IMAGE_TAG_ESCAPED.oci"
+FINAL_DIR="$IMAGE_TAG_ESCAPED.extracted"
+
+# Save the Docker image
+docker save $IMAGE_TAG -o $TAR_FILE
+
+# Create temporary extraction directory
+mkdir -p $EXTRACT_DIR
+
+# Extract the tar file
+tar -xvf $TAR_FILE -C $EXTRACT_DIR
+
+# Create final directory
+mkdir -p $FINAL_DIR
+
+# Extract layer tar files in the correct order
+cd $EXTRACT_DIR
+
+# Extract and sort layers
+LAYER_DIRS=$(jq -r '.[0].Layers[]' < manifest.json | sed 's/sha256:/blobs\/sha256\//')
+
+for layer in $LAYER_DIRS; do
+  tar -xf "$layer" -C ../$FINAL_DIR
+done
+
+echo "Extraction complete. Files are in $FINAL_DIR"
