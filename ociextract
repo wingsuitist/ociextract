@@ -49,7 +49,7 @@ cd $EXTRACT_DIR
 LAYER_DIRS=$(jq -r '.[0].Layers[]' < manifest.json | sed 's/sha256:/blobs\/sha256\//')
 
 for layer in $LAYER_DIRS; do
-  tar -xf "$layer" -C ../$FINAL_DIR
+  tar --exclude='./dev/*' --exclude='./proc/*' -xvf "$layer" -C ../$FINAL_DIR
 done
 
 echo "Extraction complete. Files are in $FINAL_DIR"
