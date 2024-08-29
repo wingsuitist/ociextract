@@ -11,6 +11,8 @@ Extract file structure from Docker image.
 ```bash
 wget https://raw.githubusercontent.com/wingsuitist/ociextract/main/ociextract
 
+chmod u+x ./ociextract
+
 docker pull alpine:latest
 
 ./ociextract alpine:latest
